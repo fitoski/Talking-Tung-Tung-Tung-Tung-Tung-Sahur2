@@ -111,7 +111,7 @@
     },
     "com.unity.mobile.notifications": {
       "version": "2.4.0",
-      "depth": 0,
+      "depth": 1,
       "source": "registry",
       "dependencies": {
         "com.unity.modules.androidjni": "1.0.0"
