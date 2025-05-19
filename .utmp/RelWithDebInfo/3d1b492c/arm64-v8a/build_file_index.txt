@@ -1,0 +1,2 @@
+D:\sahur\Talking Tung Tung Tung Tung Tung Sahur\Library\Bee\Android\Prj\IL2CPP\Gradle\unityLibrary\src\main\cpp\CMakeLists.txt
+D:\sahur\Talking Tung Tung Tung Tung Tung Sahur\Library\Bee\Android\Prj\IL2CPP\Gradle\unityLibrary\src\main\cpp\GameActivity\CMakeLists.txt

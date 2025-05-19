@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" package="com.BODOSGAMES.TalkingTungTungSahur" android:versionCode="1" android:versionName="1.0">
+  <uses-permission android:name="com.android.vending.BILLING" />
+  <uses-sdk android:minSdkVersion="21" />
+  <application>
+    <uses-library android:name="org.apache.http.legacy" android:required="false" />
+    <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-5692960194342108~5036898749" />
+    <meta-data android:name="com.google.unity.ads.UNITY_VERSION" android:value="6000.0.40f1" />
+    <provider android:name="com.google.android.gms.ads.MobileAdsInitProvider" android:exported="false" android:authorities="${applicationId}.mobileadsinitprovider" tools:replace="android:authorities" />
+    <provider android:name="androidx.startup.InitializationProvider" android:exported="false" android:authorities="${applicationId}.androidx-startup" tools:replace="android:authorities" />
+  </application>
+</manifest>
