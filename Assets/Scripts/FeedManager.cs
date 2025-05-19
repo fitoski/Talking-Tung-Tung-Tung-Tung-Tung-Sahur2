@@ -98,7 +98,7 @@ public class FeedManager : MonoBehaviour
         dailyFreeButton.interactable = !HasClaimedToday();
 
         HideAllFoods();
-        NotificationManager.Instance.ScheduleHungerNotification(4);
+        //NotificationManager.Instance.ScheduleHungerNotification(4);
     }
 
     public void OnEatAnimationEnd()
@@ -111,7 +111,7 @@ public class FeedManager : MonoBehaviour
         {
             textureFader.EndBananaFade();
         }
-        NotificationManager.Instance.ScheduleHungerNotification(4);
+        //NotificationManager.Instance.ScheduleHungerNotification(4);
     }
 
     void HideAllFoods()
