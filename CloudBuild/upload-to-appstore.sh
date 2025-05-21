@@ -1,20 +1,22 @@
 #!/bin/bash
+set -e
 
 echo "Uploading IPA to App Store Connect…"
 
-# 1) locate the IPA
-IPA="$WORKSPACE/.build/last/$TARGET_NAME/build.ipa"
-echo "IPA found at $IPA"
+# build.json’dan gelen ikinci argüman, build çıktısının olduğu klasör 
+BUILD_DIR="$2"
 
-# 2) make sure App Store Connect key dir exists
+# IPA dosyasının kesin yolu
+IPA_PATH="$BUILD_DIR/build.ipa"
+echo "IPA found at $IPA_PATH"
+
+# JWT anahtar dosyasını App Store Connect’in beklendiği yere yaz
 mkdir -p ~/.appstoreconnect/private_keys
-
-# 3) write the p8 file into the place altool expects
 echo "$ASC_API_KEY_CONTENT" > ~/.appstoreconnect/private_keys/AuthKey_${ASC_API_KEY_ID}.p8
 
-# 4) upload with altool
+# Gerçek upload
 xcrun altool --upload-app \
   --type ios \
-  --file "$IPA" \
+  --file "$IPA_PATH" \
   --apiKey "$ASC_API_KEY_ID" \
   --apiIssuer "$ASC_ISSUER_ID"
