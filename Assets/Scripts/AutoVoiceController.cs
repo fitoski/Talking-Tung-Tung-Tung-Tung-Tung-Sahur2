@@ -16,7 +16,8 @@ public class AutoVoiceController : MonoBehaviour
     public string triggerStartSpeaking = "StartSpeaking";
     public string triggerStopSpeaking = "StopSpeaking";
 
-    public float playbackPitch = 1.7f;
+    [Range(0.6f, 1.5f)]
+    public float playbackPitch = 1.3f;   
 
     AudioSource audioSource;
     Animator animator;
@@ -28,23 +29,31 @@ public class AutoVoiceController : MonoBehaviour
     {
         audioSource = GetComponent<AudioSource>();
         animator = GetComponent<Animator>();
+
         audioSource.playOnAwake = false;
         audioSource.spatialBlend = 0f;
 
         sampleRate = AudioSettings.outputSampleRate;
-        if (Microphone.devices.Length > 0)
-            micDevice = Microphone.devices[0];
-        else
-            Debug.LogWarning("🎤 Mikrofon bulunamadı!");
-
+        if (Microphone.devices.Length == 0)
+        {
+            Debug.LogError("🎤 No microphone!");
+            enabled = false;
+            return;
+        }
+        micDevice = Microphone.devices[0];
         StartDetection();
     }
 
     void StartDetection()
     {
         detectionClip = Microphone.Start(micDevice, true, 1, sampleRate);
+        StartCoroutine(MicWarmup());
     }
-
+    IEnumerator MicWarmup()
+    {
+        while (Microphone.GetPosition(micDevice) == 0)
+            yield return null;
+    }
     void StopDetection()
     {
         Microphone.End(micDevice);
@@ -53,35 +62,25 @@ public class AutoVoiceController : MonoBehaviour
 
     void Update()
     {
-        if (!CharacterBusy.TryLock()) return;
+        if (detectionClip == null || !CharacterBusy.TryLock()) return;
 
-        if (detectionClip == null)
-        {
-            CharacterBusy.Unlock();
-            return;
-        }
-
-        float rms = GetRMS(detectionClip, sampleWindow);
-        if (rms > detectionThreshold)
+        if (GetRMS(detectionClip) > detectionThreshold)
         {
             StopDetection();
             StartCoroutine(ListenRecordSpeakRoutine());
         }
-        else
-        {
-            CharacterBusy.Unlock();
-        }
+        else CharacterBusy.Unlock();
     }
 
-    float GetRMS(AudioClip clip, int window)
+    float GetRMS(AudioClip clip)
     {
         int pos = Microphone.GetPosition(micDevice);
-        if (pos < window) return 0f;
-        float[] buf = new float[window];
-        clip.GetData(buf, pos - window);
-        float sum = 0f;
-        foreach (var s in buf) sum += s * s;
-        return Mathf.Sqrt(sum / window);
+        if (pos < sampleWindow) return 0f;
+        float[] buf = new float[sampleWindow];
+        clip.GetData(buf, pos - sampleWindow);
+        double sum = 0;
+        for (int i = 0; i < buf.Length; i++) sum += buf[i] * buf[i];
+        return Mathf.Sqrt((float)(sum / sampleWindow));
     }
 
     IEnumerator ListenRecordSpeakRoutine()
@@ -89,28 +88,34 @@ public class AutoVoiceController : MonoBehaviour
         animator.SetTrigger(triggerStartListening);
 
         var recordClip = Microphone.Start(micDevice, false,
-            Mathf.CeilToInt(maxRecordTime), sampleRate);
+                          Mathf.CeilToInt(maxRecordTime), sampleRate);
 
         float silenceTimer = 0f;
         int lastPos = 0;
-        var buffer = new List<float>();
-        float t0 = Time.time;
+        List<float> buffer = new();
+
+        float startTime = Time.time;
         while (true)
         {
             int pos = Microphone.GetPosition(micDevice);
             int diff = pos - lastPos; if (diff < 0) diff += recordClip.samples;
+
             if (diff > 0)
             {
                 var chunk = new float[diff];
                 recordClip.GetData(chunk, lastPos);
                 buffer.AddRange(chunk);
-                float sum = 0f; foreach (var s in chunk) sum += s * s;
-                float lvl = Mathf.Sqrt(sum / chunk.Length);
-                if (lvl < detectionThreshold) silenceTimer += Time.deltaTime;
-                else silenceTimer = 0f;
+
+                float lvl = 0f;
+                for (int i = 0; i < chunk.Length; i++) lvl += chunk[i] * chunk[i];
+                lvl = Mathf.Sqrt(lvl / chunk.Length);
+                silenceTimer = (lvl < detectionThreshold) ? silenceTimer + Time.deltaTime : 0f;
                 lastPos = pos;
             }
-            if (silenceTimer >= silenceDuration || Time.time - t0 >= maxRecordTime) break;
+
+            if (silenceTimer >= silenceDuration ||
+                Time.time - startTime >= maxRecordTime) break;
+
             yield return null;
         }
 
@@ -123,12 +128,13 @@ public class AutoVoiceController : MonoBehaviour
         animator.SetTrigger(triggerStartSpeaking);
 
         int channels = recordClip.channels;
-        var playClip = AudioClip.Create("play", buffer.Count / channels,
-                          channels, recordClip.frequency, false);
+        var playClip = AudioClip.Create("playback", buffer.Count / channels,
+                                        channels, sampleRate, false);
         playClip.SetData(buffer.ToArray(), 0);
 
         audioSource.pitch = playbackPitch;
         audioSource.PlayOneShot(playClip);
+
         yield return new WaitForSeconds(playClip.length / playbackPitch);
 
         animator.SetTrigger(triggerStopSpeaking);

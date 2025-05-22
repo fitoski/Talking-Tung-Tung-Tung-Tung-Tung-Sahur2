@@ -1,5 +1,4 @@
-﻿// Assets/Editor/CaptureAppStore.cs
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
 using System;
@@ -7,44 +6,56 @@ using System.IO;
 
 public static class CaptureAppStore
 {
-    // Captures a 6.7-inch App Store screenshot with a unique timestamped filename
-    [MenuItem("Tools/Capture 6.7-inch Screenshot %#k")]
-    public static void Capture()
+    //   iPhone 6.7" : Ctrl/Cmd + Alt + K
+    [MenuItem("Tools/Capture ▶ iPhone 6.7\" (1290x2796) %&k")]
+    private static void Cap_iPhone67()   => Capture(1290, 2796, "iPhone6p7");
+
+    //   iPad 13"  P : Ctrl/Cmd + Alt + I
+    [MenuItem("Tools/Capture ▶ iPad 13\" Portrait (2064x2752) %&i")]
+    private static void Cap_iPad13_P()   => Capture(2064, 2752, "iPad13_P");
+
+    //   iPad 13"  L : Ctrl/Cmd + Alt + O
+    [MenuItem("Tools/Capture ▶ iPad 13\" Landscape (2752x2064) %&o")]
+    private static void Cap_iPad13_L()   => Capture(2752, 2064, "iPad13_L");
+
+    //   iPad 12.9" P : Ctrl/Cmd + Alt + U
+    [MenuItem("Tools/Capture ▶ iPad 12.9\" Portrait (2048x2732) %&u")]
+    private static void Cap_iPad129_P()  => Capture(2048, 2732, "iPad129_P");
+
+    //   iPad 12.9" L : Ctrl/Cmd + Alt + Y
+    [MenuItem("Tools/Capture ▶ iPad 12.9\" Landscape (2732x2048) %&y")]
+    private static void Cap_iPad129_L()  => Capture(2732, 2048, "iPad129_L");
+
+    // ---------- Ortak çekim fonksiyonu ----------
+    private static void Capture(int width, int height, string tag)
     {
-        const int W = 1290, H = 2796;
-        // Create a RenderTexture at the App Store resolution
-        var rt = new RenderTexture(W, H, 24);
         var cam = Camera.main;
-        if (cam == null)
+        if (!cam)
         {
-            Debug.LogError("❌ Main Camera not found! Ensure your camera has the 'MainCamera' tag.");
+            Debug.LogError("❌ Main Camera not found! Kameranıza 'MainCamera' tag’i verin.");
             return;
         }
-        // Render the camera's view into the texture
+
+        var rt = new RenderTexture(width, height, 24);
         cam.targetTexture = rt;
         cam.Render();
 
-        // Read pixels from the RenderTexture
         RenderTexture.active = rt;
-        var tex = new Texture2D(W, H, TextureFormat.RGB24, false);
-        tex.ReadPixels(new Rect(0, 0, W, H), 0, 0);
+        var tex = new Texture2D(width, height, TextureFormat.RGB24, false);
+        tex.ReadPixels(new Rect(0, 0, width, height), 0, 0);
         tex.Apply();
 
-        // Clean up
         cam.targetTexture = null;
         RenderTexture.active = null;
-        UnityEngine.Object.DestroyImmediate(rt);
+UnityEngine.Object.DestroyImmediate(rt);
 
-        // Generate a unique filename with timestamp
         string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-        string filename = $"AppStoreShot_6p7_{timestamp}.png";
-        string path = Path.Combine(Application.dataPath, "..", filename);
+        string filename  = $"AppStoreShot_{tag}_{timestamp}.png";
+        string path      = Path.Combine(Application.dataPath, "..", filename);
 
-        // Write the PNG file
         File.WriteAllBytes(path, tex.EncodeToPNG());
-        Debug.Log($"✅ Screenshot saved: {path}");
+        Debug.Log($"✅ {width}×{height} ekran görüntüsü kaydedildi → {path}");
 
-        // Refresh the AssetDatabase so the file appears in Unity
         AssetDatabase.Refresh();
     }
 }
